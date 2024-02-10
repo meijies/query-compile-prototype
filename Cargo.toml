@@ -1,9 +1,20 @@
-[package]
+[workspace]
+members = [
+  "physical-operator",
+  "physical-expr",
+  "execution"
+]
+resolver = "2"
+
+[workspace.package]
 name = "query-compile-prototype"
 version = "0.1.0"
 edition = "2021"
+license= "Apache-2.0"
+publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[workspace.dependencies]
 arrow = "50"
+execution={path="./execution"}
+physical-expr={path="./physical-expr"}
+physical-operator={path="./physical-operator"}

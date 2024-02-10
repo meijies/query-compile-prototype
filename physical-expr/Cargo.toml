@@ -1,0 +1,11 @@
+[package]
+name = "physical-expr"
+version = {workspace=true}
+edition = {workspace=true}
+
+[lib]
+name="physical_expr"
+path="src/lib.rs"
+
+[dependencies]
+arrow = "50"

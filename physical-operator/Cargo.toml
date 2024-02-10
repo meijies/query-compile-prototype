@@ -1,0 +1,13 @@
+[package]
+name = "physical-operator"
+version = {workspace=true}
+edition = {workspace=true}
+
+[lib]
+name="physical_operator"
+path="src/lib.rs"
+
+[dependencies]
+arrow = "50"
+execution = {workspace=true}
+physical-expr = {workspace=true}
