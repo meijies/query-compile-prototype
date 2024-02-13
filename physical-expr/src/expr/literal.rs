@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use arrow::{datatypes::{DataType, SchemaRef}, record_batch::RecordBatch};
-use crate::{Datum, PhysicalExpr, ScalarValue};
+use crate::{jit, Codegen, Datum, PhysicalExpr, ScalarValue};
 
 struct LiteralExpr {
     scalar: ScalarValue,
@@ -25,5 +25,11 @@ impl PhysicalExpr for LiteralExpr {
 
     fn eval(&self, _: &RecordBatch) -> Result<Datum, ()> {
         Ok(Datum::Scalar(self.scalar))
+    }
+}
+
+impl Codegen for LiteralExpr {
+
+    fn gen(&self, jit: jit::JIT) {
     }
 }

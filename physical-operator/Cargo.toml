@@ -8,6 +8,6 @@ name="physical_operator"
 path="src/lib.rs"
 
 [dependencies]
-arrow = "50"
+arrow = {workspace=true}
 execution = {workspace=true}
 physical-expr = {workspace=true}

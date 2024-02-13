@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use arrow::{compute::kernels::{cmp::lt, numeric::add}, datatypes::{DataType, SchemaRef}, record_batch::RecordBatch};
 
-use crate::{Datum, PhysicalExpr};
+use crate::{jit::JIT, Codegen, Datum, PhysicalExpr};
 
 
 enum Op {
@@ -41,5 +41,12 @@ impl PhysicalExpr for BinaryExpr {
             Op::Add => Ok(Datum::Array(add(&*lhs.as_ref(), &*rhs.as_ref()).unwrap())),
             Op::Lt => Ok(Datum::Array(Arc::new(lt(&*lhs.as_ref(), &*rhs.as_ref()).unwrap()))),
         }
+    }
+}
+
+impl Codegen for BinaryExpr {
+
+    fn gen(&self, jit: JIT) {
+    
     }
 }

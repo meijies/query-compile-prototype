@@ -8,4 +8,10 @@ name="physical_expr"
 path="src/lib.rs"
 
 [dependencies]
-arrow = "50"
+arrow = {workspace=true}
+cranelift = "0.104.1"
+cranelift-jit = "0.104.1"
+cranelift-module = "0.104.1"
+cranelift-native = "0.104.1"
+
+

@@ -10,4 +10,4 @@ name = "execution"
 path = "src/lib.rs"
 
 [dependencies]
-arrow = "50"
+arrow = {workspace = true}
