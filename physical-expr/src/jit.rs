@@ -1,11 +1,14 @@
-use std::mem;
-
 use arrow::{
-    array::{ArrayRef, Datum, Int32Array}, compute::kernels::numeric::add, error::ArrowError
+    array::{ArrayRef, Datum, Int32Array},
+    compute::kernels::numeric,
 };
 use cranelift::{codegen::ir::UserFuncName, prelude::*};
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataDescription, Linkage, Module};
+use std::{
+    mem::{self, forget},
+    sync::Arc,
+};
 
 pub(crate) struct JIT {
     func_ctx: FunctionBuilderContext,
@@ -14,11 +17,18 @@ pub(crate) struct JIT {
     module: JITModule,
 }
 
+extern "C" fn add_wrapper(lhs: *mut Arc<dyn Datum>, rhs: *mut Arc<dyn Datum>) -> *const ArrayRef {
+    let lhs_ref = unsafe { lhs.as_ref().unwrap() };
+    let rhs_ref = unsafe { rhs.as_ref().unwrap() };
+    let res = numeric::add(lhs_ref.as_ref(), rhs_ref.as_ref()).unwrap();
+    &res as *const ArrayRef
+}
+
 impl Default for JIT {
     fn default() -> Self {
         let mut flag_builder = settings::builder();
         flag_builder.set("use_colocated_libcalls", "false").unwrap();
-        flag_builder.set("is_pic", "false");
+        flag_builder.set("is_pic", "false").unwrap();
 
         // build isa
         let isa_builder = cranelift_native::builder().unwrap_or_else(|msg| {
@@ -30,7 +40,7 @@ impl Default for JIT {
 
         // build module
         let mut builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
-        let addr: *const u8 = add as *const u8;
+        let addr: *const u8 = add_wrapper as *const u8;
         builder.symbol("add", addr);
 
         let module = JITModule::new(builder);
@@ -94,13 +104,18 @@ impl JIT {
         self.module.finalize_definitions().unwrap();
         let code_call = self.module.get_finalized_function(func_call);
         let call = unsafe {
-            mem::transmute::<_, fn(&dyn Datum, &dyn Datum) -> Result<ArrayRef, ArrowError>>(
-                code_call,
-            )
+            mem::transmute::<
+                _,
+                extern "C" fn(*mut Arc<dyn Datum>, *mut Arc<dyn Datum>) -> *const ArrayRef,
+            >(code_call)
         };
-        let a1 = Int32Array::from(vec![1, 2, 3, 4, 5]);
-        let a2 = Int32Array::from(vec![1, 2, 3, 4, 5]);
-        let result = call(&a1, &a2).unwrap();
+        let a1: Arc<dyn Datum> = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
+        let a2: Arc<dyn Datum> = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
+        let result = call(
+            &mut a1.clone() as *mut Arc<dyn Datum>,
+            &mut a2.clone() as *mut Arc<dyn Datum>,
+        );
+
         println!("{:?}", result);
     }
 }
