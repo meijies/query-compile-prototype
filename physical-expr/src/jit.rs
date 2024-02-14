@@ -1,5 +1,5 @@
 use arrow::{
-    array::{ArrayRef, Datum, Int32Array},
+    array::{Array, ArrayRef, Datum, Int32Array},
     compute::kernels::numeric,
 };
 use cranelift::{codegen::ir::UserFuncName, prelude::*};
@@ -17,11 +17,14 @@ pub(crate) struct JIT {
     module: JITModule,
 }
 
-extern "C" fn add_wrapper(lhs: *mut Arc<dyn Datum>, rhs: *mut Arc<dyn Datum>) -> *const ArrayRef {
-    let lhs_ref = unsafe { lhs.as_ref().unwrap() };
-    let rhs_ref = unsafe { rhs.as_ref().unwrap() };
-    let res = numeric::add(lhs_ref.as_ref(), rhs_ref.as_ref()).unwrap();
-    &res as *const ArrayRef
+extern "C" fn add_wrapper(
+    lhs: *const Arc<dyn Datum>,
+    rhs: *const Arc<dyn Datum>,
+) -> *const Arc<dyn Array> {
+    let lhs_ref = unsafe { Arc::from_raw(lhs) };
+    let rhs_ref = unsafe { Arc::from_raw(rhs) };
+    let res = numeric::add((*lhs_ref).as_ref(), (*rhs_ref).as_ref()).unwrap();
+    return Arc::into_raw(Arc::new(res));
 }
 
 impl Default for JIT {
@@ -106,17 +109,18 @@ impl JIT {
         let call = unsafe {
             mem::transmute::<
                 _,
-                extern "C" fn(*mut Arc<dyn Datum>, *mut Arc<dyn Datum>) -> *const ArrayRef,
+                extern "C" fn(
+                    *const Arc<dyn Datum>,
+                    *const Arc<dyn Datum>,
+                ) -> *const Arc<dyn Array>,
             >(code_call)
         };
-        let a1: Arc<dyn Datum> = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
-        let a2: Arc<dyn Datum> = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
-        let result = call(
-            &mut a1.clone() as *mut Arc<dyn Datum>,
-            &mut a2.clone() as *mut Arc<dyn Datum>,
-        );
+        let a1: Arc<Arc<dyn Datum>> = Arc::new(Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])));
+        let a2: Arc<Arc<dyn Datum>> = Arc::new(Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5])));
+        let result = call(Arc::into_raw(a1), Arc::into_raw(a2));
 
-        println!("{:?}", result);
+        let result = unsafe { Arc::from_raw(result) };
+        println!("{:?}", (*result).clone());
     }
 }
 
