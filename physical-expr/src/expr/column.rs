@@ -1,6 +1,9 @@
 use std::{ops::Index, sync::Arc};
 
-use arrow::{datatypes::{DataType, SchemaRef}, record_batch::RecordBatch};
+use arrow::{
+    datatypes::{DataType, SchemaRef},
+    record_batch::RecordBatch,
+};
 
 use crate::PhysicalExpr;
 

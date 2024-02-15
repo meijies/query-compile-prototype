@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "learn"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,8 +8,4 @@ publish.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arrow = {workspace =true}
-cranelift = "0.104.1"
-cranelift-jit = "0.104.1"
-cranelift-module = "0.104.1"
-cranelift-native = "0.104.1"
+arrow = {workspace = true}

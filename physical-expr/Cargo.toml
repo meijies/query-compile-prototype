@@ -1,17 +1,23 @@
 [package]
 name = "physical-expr"
-version = {workspace=true}
-edition = {workspace=true}
+version = { workspace = true }
+edition = { workspace = true }
 
 [lib]
-name="physical_expr"
-path="src/lib.rs"
+name = "physical_expr"
+path = "src/lib.rs"
 
 [dependencies]
-arrow = {workspace=true}
+arrow = { version = "50", default-features = false, features = ["test_utils"] }
+core = { workspace = true }
 cranelift = "0.104.1"
 cranelift-jit = "0.104.1"
 cranelift-module = "0.104.1"
 cranelift-native = "0.104.1"
 
+[dev-dependencies]
+criterion = { version = "0.5" }
 
+[[bench]]
+name = "experiment"
+harness = false

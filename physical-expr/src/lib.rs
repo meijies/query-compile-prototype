@@ -1,13 +1,12 @@
-use crate::jit::JIT;
 use arrow::{
     array::{ArrayRef, Int64Array},
     datatypes::{DataType, SchemaRef},
     record_batch::RecordBatch,
 };
 use std::sync::Arc;
+use cranelift::prelude::*;
 
 pub mod expr;
-pub mod jit;
 
 #[derive(Clone, Debug)]
 pub enum Datum {
@@ -34,7 +33,7 @@ pub enum ScalarValue {
 pub type PhysicalExprRef = Arc<dyn PhysicalExpr>;
 
 pub trait Codegen {
-    fn gen(&self, jit: JIT);
+    fn gen(&self) -> Value;
 }
 
 pub trait PhysicalExpr: Send + Sync {

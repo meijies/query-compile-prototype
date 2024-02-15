@@ -1,9 +1,13 @@
 use std::sync::Arc;
 
-use arrow::{ compute::filter, datatypes::SchemaRef, record_batch::{RecordBatch, RecordBatchOptions}};
-use arrow::array::AsArray;
-use execution::context::ExecContext;
 use crate::PhysicalOperator;
+use arrow::array::AsArray;
+use arrow::{
+    compute::filter,
+    datatypes::SchemaRef,
+    record_batch::{RecordBatch, RecordBatchOptions},
+};
+use execution::context::ExecContext;
 use physical_expr::PhysicalExpr;
 
 struct FilterOperator {

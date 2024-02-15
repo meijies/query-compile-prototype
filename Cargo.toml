@@ -1,5 +1,5 @@
 [workspace]
-members = ["common", "core", "physical-operator", "physical-expr", "execution"]
+members = ["common", "core", "physical-operator", "physical-expr", "execution", "learn"]
 resolver = "2"
 
 [workspace.package]

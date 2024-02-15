@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use arrow::{compute::kernels::{cmp::lt, numeric::add}, datatypes::{DataType, SchemaRef}, record_batch::RecordBatch};
+use arrow::{
+    compute::kernels::{cmp::lt, numeric::add},
+    datatypes::{DataType, SchemaRef},
+    record_batch::RecordBatch,
+};
 
-use crate::{jit::JIT, Codegen, Datum, PhysicalExpr};
-
+use crate::{Datum, PhysicalExpr};
 
 enum Op {
     Add,
@@ -39,14 +42,9 @@ impl PhysicalExpr for BinaryExpr {
         let rhs = self.rhs.eval(batch).unwrap();
         match self.op {
             Op::Add => Ok(Datum::Array(add(&*lhs.as_ref(), &*rhs.as_ref()).unwrap())),
-            Op::Lt => Ok(Datum::Array(Arc::new(lt(&*lhs.as_ref(), &*rhs.as_ref()).unwrap()))),
+            Op::Lt => Ok(Datum::Array(Arc::new(
+                lt(&*lhs.as_ref(), &*rhs.as_ref()).unwrap(),
+            ))),
         }
-    }
-}
-
-impl Codegen for BinaryExpr {
-
-    fn gen(&self, jit: JIT) {
-    
     }
 }

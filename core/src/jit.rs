@@ -24,7 +24,7 @@ extern "C" fn add_wrapper(
     let lhs_ref = unsafe { Arc::from_raw(lhs) };
     let rhs_ref = unsafe { Arc::from_raw(rhs) };
     let res = numeric::add((*lhs_ref).as_ref(), (*rhs_ref).as_ref()).unwrap();
-    return Arc::into_raw(Arc::new(res));
+    Arc::into_raw(Arc::new(res))
 }
 
 impl Default for JIT {
