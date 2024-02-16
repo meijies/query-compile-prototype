@@ -820,6 +820,12 @@ name = "learn"
 version = "0.1.0"
 dependencies = [
  "arrow",
+ "core",
+ "cranelift",
+ "cranelift-jit",
+ "cranelift-module",
+ "cranelift-native",
+ "libc",
 ]
 
 [[package]]
