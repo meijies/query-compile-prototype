@@ -8,7 +8,7 @@ mod tests {
     fn create_scalar() {
         let scalar = Int32Array::new_scalar(1);
         let (array, is_scalar) = scalar.get();
-        assert_eq!(is_scalar, true);
+        assert!(is_scalar);
         let array: &Int32Array = array.as_primitive();
         assert_eq!(unsafe { array.value_unchecked(0) }, 1);
     }
@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn visit_scalar() {
         let array = Int32Array::from(vec![1, 2, 3, 4]);
-        assert_eq!(unsafe {array.value_unchecked(0)}, 1);
+        assert_eq!(unsafe { array.value_unchecked(0) }, 1);
         assert_eq!(array.value(1), 2);
     }
 

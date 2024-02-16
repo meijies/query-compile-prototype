@@ -4,7 +4,6 @@ use arrow::{
     record_batch::RecordBatch,
 };
 use std::sync::Arc;
-use cranelift::prelude::*;
 
 pub mod expr;
 
@@ -31,10 +30,6 @@ pub enum ScalarValue {
 }
 
 pub type PhysicalExprRef = Arc<dyn PhysicalExpr>;
-
-pub trait Codegen {
-    fn gen(&self) -> Value;
-}
 
 pub trait PhysicalExpr: Send + Sync {
     fn output_type(&self, schema: SchemaRef) -> DataType;

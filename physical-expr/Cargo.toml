@@ -19,5 +19,9 @@ cranelift-native = "0.104.1"
 criterion = { version = "0.5" }
 
 [[bench]]
-name = "experiment"
+name = "expr_experiment"
+harness = false
+
+[[bench]]
+name="scalar_experiment"
 harness = false

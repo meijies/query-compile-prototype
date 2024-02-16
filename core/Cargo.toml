@@ -8,7 +8,8 @@ publish.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arrow = {workspace =true}
+common = { workspace = true }
+arrow = { workspace = true }
 cranelift = "0.104.1"
 cranelift-jit = "0.104.1"
 cranelift-module = "0.104.1"

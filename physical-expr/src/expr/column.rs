@@ -26,7 +26,7 @@ impl PhysicalExpr for ColumnExpr {
     }
 
     fn children(&self) -> Vec<Arc<dyn PhysicalExpr>> {
-        todo!()
+        vec![]
     }
 
     fn eval(&self, batch: &RecordBatch) -> Result<Datum, ()> {

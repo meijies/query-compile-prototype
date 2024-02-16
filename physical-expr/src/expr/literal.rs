@@ -3,6 +3,8 @@ use arrow::{
     datatypes::{DataType, SchemaRef},
     record_batch::RecordBatch,
 };
+use core::{ExprGen, FuncGenContext};
+use cranelift::prelude::*;
 use std::sync::Arc;
 
 struct LiteralExpr {
@@ -28,5 +30,13 @@ impl PhysicalExpr for LiteralExpr {
 
     fn eval(&self, _: &RecordBatch) -> Result<Datum, ()> {
         Ok(Datum::Scalar(self.scalar))
+    }
+}
+
+impl ExprGen for LiteralExpr {
+    fn gen(&self, ctx: &mut FuncGenContext) -> Value {
+        match self.scalar {
+            ScalarValue::Int64(value) => ctx.builder.ins().iconst(types::I64, value),
+        }
     }
 }

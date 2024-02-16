@@ -1,5 +1,10 @@
 use arrow::{
-    array::{Array, BooleanArray, Datum, Float64Array, PrimitiveArray, Scalar}, buffer::{BooleanBuffer, NullBuffer}, compute::kernels::{cmp::lt, numeric}, datatypes::{Float64Type}, error::ArrowError, util::bench_util::create_primitive_array
+    array::{Array, BooleanArray, Datum, Float64Array, PrimitiveArray, Scalar},
+    buffer::{BooleanBuffer, NullBuffer},
+    compute::kernels::{cmp::lt, numeric},
+    datatypes::Float64Type,
+    error::ArrowError,
+    util::bench_util::create_primitive_array,
 };
 
 use arrow::array::ArrowNativeTypeOp;
@@ -22,27 +27,28 @@ fn hardcode_expr_calc(
     b: &Float64Array,
     c: &Scalar<PrimitiveArray<Float64Type>>,
     d: &Scalar<PrimitiveArray<Float64Type>>,
-) -> Result<(), ArrowError> {
+) -> Result<BooleanArray, ArrowError> {
     if a.len() != b.len() {
         return Err(ArrowError::ComputeError(
             "Cannot perform binary operation on arrays of different length".to_string(),
         ));
     }
 
-    if a.is_empty() {
-        return Ok(());
-    }
-
     let nulls = NullBuffer::union(a.logical_nulls().as_ref(), b.logical_nulls().as_ref());
 
-    let values = a.values().iter().zip(b.values()).map(|(l, r)| l.add_wrapping(*r).div_wrapping(3.0).lt(&4.0));
+    let values = a
+        .values()
+        .iter()
+        .zip(b.values())
+        .map(|(l, r)| l.add_wrapping(*r).div_wrapping(3.0).lt(&4.0));
     // JUSTIFICATION
     //  Benefit
     //      ~60% speedup
     //  Soundness
     //      `values` is an iterator with a known size from a PrimitiveArray
     let buffer = unsafe { BooleanBuffer::from_iter(values) };
-    Ok(())
+    let res = BooleanArray::new(buffer, nulls);
+    Ok(res)
 }
 
 fn jit_calc(
@@ -68,7 +74,8 @@ fn add_benchmark(c: &mut Criterion) {
 
     c.bench_function("hand_calc", |b| {
         b.iter(|| {
-            criterion::black_box(hardcode_expr_calc(&array_a, &array_b, &scalar_c, &scalar_d)).unwrap()
+            criterion::black_box(hardcode_expr_calc(&array_a, &array_b, &scalar_c, &scalar_d))
+                .unwrap()
         })
     });
 
