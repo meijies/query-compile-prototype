@@ -17,6 +17,7 @@ fn build_flags() -> settings::Flags {
     flag_builder
         .set("enable_llvm_abi_extensions", "true")
         .unwrap();
+    flag_builder.set("opt_level", "speed").unwrap();
     let flags = settings::Flags::new(flag_builder);
     assert!(!flags.use_colocated_libcalls());
     assert!(!flags.is_pic());
@@ -38,6 +39,6 @@ fn build_jit_module(isa: Arc<dyn TargetIsa>) -> JITModule {
 
 fn register_func(builder: &mut JITBuilder) {
     for op in NativeOpCall::all_opcalls() {
-        builder.symbol(op.name(),op.addr());
+        builder.symbol(op.name(), op.addr());
     }
 }

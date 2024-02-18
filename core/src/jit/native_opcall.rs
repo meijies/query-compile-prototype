@@ -10,12 +10,12 @@ pub enum NativeOpCall {
 }
 
 impl NativeOpCall {
-    pub(crate)fn all_opcalls() -> &'static [NativeOpCall] {
+    pub(crate) fn all_opcalls() -> &'static [NativeOpCall] {
         use NativeOpCall::*;
         &[Float64AddWrapping, Float64DivWrapping, Float64Lt]
     }
 
-    pub (crate) fn signature(&self, pointer_type: Type) -> Signature {
+    pub(crate) fn signature(&self, pointer_type: Type) -> Signature {
         use NativeOpCall::*;
         match self {
             Float64AddWrapping | Float64DivWrapping => Signature {
@@ -31,7 +31,7 @@ impl NativeOpCall {
         }
     }
 
-    pub (crate) fn name(&self) -> &str {
+    pub(crate) fn name(&self) -> &str {
         use NativeOpCall::*;
         match self {
             Float64AddWrapping => "Float64AddWrapping",
@@ -40,7 +40,7 @@ impl NativeOpCall {
         }
     }
 
-    pub (crate) fn addr(&self) -> *const u8 {
+    pub(crate) fn addr(&self) -> *const u8 {
         use NativeOpCall::*;
         match self {
             Float64AddWrapping => f64::add_wrapping as *const u8,

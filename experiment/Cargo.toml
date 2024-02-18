@@ -18,9 +18,5 @@ criterion = { version = "0.5" }
 
 
 [[bench]]
-name = "expr_calc"
-harness = false
-
-[[bench]]
-name="scalar_calc"
+name = "expr_bench"
 harness = false

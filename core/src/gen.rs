@@ -1,5 +1,8 @@
 use crate::{jit::build::create_jit_module, native_opcall::NativeOpCall};
-use cranelift::{codegen::ir::UserFuncName, prelude::*};
+use cranelift::{
+    codegen::{ir::UserFuncName, isa::CallConv},
+    prelude::*,
+};
 use cranelift_module::{FuncId, Linkage, Module};
 
 pub trait ExprGen {
@@ -16,7 +19,7 @@ pub struct CodegenContext {
 impl Default for CodegenContext {
     fn default() -> Self {
         let module = create_jit_module();
-        Self {
+                Self {
             _func_ctx: FunctionBuilderContext::new(),
             ctx: module.make_context(),
             ptype: module.target_config().pointer_type(),
@@ -33,7 +36,7 @@ impl CodegenContext {
         returns: Vec<AbiParam>,
     ) -> FuncGenContext {
         let sig = Signature {
-            call_conv: self.module.target_config().default_call_conv,
+            call_conv: CallConv::Fast,
             params,
             returns,
         };
