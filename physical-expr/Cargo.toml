@@ -8,7 +8,7 @@ name = "physical_expr"
 path = "src/lib.rs"
 
 [dependencies]
-arrow = { version = "50", default-features = false, features = ["test_utils"] }
+arrow = { workspace = true }
 core = { workspace = true }
 cranelift = "0.104.1"
 cranelift-jit = "0.104.1"
@@ -18,10 +18,3 @@ cranelift-native = "0.104.1"
 [dev-dependencies]
 criterion = { version = "0.5" }
 
-[[bench]]
-name = "expr_experiment"
-harness = false
-
-[[bench]]
-name="scalar_experiment"
-harness = false

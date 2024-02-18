@@ -1,0 +1,26 @@
+[package]
+name = "experiment"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+arrow = { version = "50", default-features = false, features = ["test_utils"] }
+core = { workspace = true }
+cranelift = "0.104.1"
+cranelift-jit = "0.104.1"
+cranelift-module = "0.104.1"
+cranelift-native = "0.104.1"
+
+[dev-dependencies]
+criterion = { version = "0.5" }
+
+
+[[bench]]
+name = "expr_calc"
+harness = false
+
+[[bench]]
+name="scalar_calc"
+harness = false
