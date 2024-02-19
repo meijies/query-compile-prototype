@@ -52,4 +52,11 @@ mod tests {
         let d2: &Int32Array = as_primitive_array(&array);
         assert_eq!(d1.values(), d2.values());
     }
+
+    #[test]
+    fn interal_values() {
+        let array = Int32Array::from(vec![1, 2, 3, 4]);
+        array.values().inner().as_ptr();
+
+    }
 }

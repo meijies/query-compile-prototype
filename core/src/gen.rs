@@ -19,9 +19,11 @@ pub struct CodegenContext {
 impl Default for CodegenContext {
     fn default() -> Self {
         let module = create_jit_module();
-                Self {
+        let mut ctx = module.make_context();
+        ctx.set_disasm(true);
+        Self {
             _func_ctx: FunctionBuilderContext::new(),
-            ctx: module.make_context(),
+            ctx,
             ptype: module.target_config().pointer_type(),
             module,
         }
@@ -110,6 +112,13 @@ impl<'a> FuncGenContext<'a> {
 
     pub fn finalize(mut self, result: Value) -> FuncId {
         self.builder.ins().return_(&[result]);
+        self.builder.seal_all_blocks();
+        self.builder.finalize();
+        self.func_id
+    }
+
+    pub fn finalize_without_return(mut self) -> FuncId {
+        self.builder.ins().return_(&[]);
         self.builder.seal_all_blocks();
         self.builder.finalize();
         self.func_id
