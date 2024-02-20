@@ -10,7 +10,6 @@ fn first() {
 mod tests {
     use super::first;
 
-
     #[test]
     fn test_first() {
         first();

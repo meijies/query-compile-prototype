@@ -57,6 +57,5 @@ mod tests {
     fn interal_values() {
         let array = Int32Array::from(vec![1, 2, 3, 4]);
         array.values().inner().as_ptr();
-
     }
 }

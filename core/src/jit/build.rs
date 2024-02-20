@@ -1,13 +1,13 @@
 use cranelift::{codegen::isa::TargetIsa, prelude::*};
 use cranelift_jit::{JITBuilder, JITModule};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use super::native_opcall::NativeOpCall;
+use crate::gen::FuncRegister;
 
-pub fn create_jit_module() -> JITModule {
+pub fn create_jit_module(funcs: &HashMap<&str, FuncRegister>) -> JITModule {
     let flags = build_flags();
     let isa = build_isa(flags);
-    build_jit_module(isa)
+    build_jit_module(isa, funcs)
 }
 
 fn build_flags() -> settings::Flags {
@@ -31,14 +31,10 @@ fn build_isa(flags: settings::Flags) -> Arc<dyn TargetIsa> {
     isa_builder.finish(flags).unwrap()
 }
 
-fn build_jit_module(isa: Arc<dyn TargetIsa>) -> JITModule {
+fn build_jit_module(isa: Arc<dyn TargetIsa>, funcs: &HashMap<&str, FuncRegister>) -> JITModule {
     let mut builder = JITBuilder::with_isa(isa, cranelift_module::default_libcall_names());
-    register_func(&mut builder);
-    JITModule::new(builder)
-}
-
-fn register_func(builder: &mut JITBuilder) {
-    for op in NativeOpCall::all_opcalls() {
-        builder.symbol(op.name(), op.addr());
+    for (&k, v) in funcs {
+        builder.symbol(k, v.address);
     }
+    JITModule::new(builder)
 }
