@@ -4,8 +4,8 @@ use arrow::{
 
 use criterion::*;
 use experiment::expr::{
-    hardcode_expr, hardcode_expr_on_array, jit_expr_on_array, jit_expr_v1, jit_expr_v2,
-    native_arrow_expr, native_arrow_expr_on_array,
+    hardcode_expr, hardcode_expr_on_array, jit_expr_on_array, jit_expr_on_array_v3, jit_expr_v1,
+    jit_expr_v2, jit_expr_v3, native_arrow_expr, native_arrow_expr_on_array,
 };
 fn expr_bench(c: &mut Criterion) {
     let v1 = jit_expr_v1();
@@ -63,6 +63,11 @@ fn expr_bench_on_array(c: &mut Criterion) {
     let const_d = 4.0_f64;
     let v1 = jit_expr_v1();
     let v2 = jit_expr_v2();
+    let v3 = jit_expr_v3();
+
+    c.bench_function("jit_esxpr_on_array_v3", |b| {
+        b.iter(|| jit_expr_on_array_v3(&array_a, &array_b, 3.0f64, 4.0f64, v3).unwrap())
+    });
 
     c.bench_function("jit_expr_on_array_v1", |b| {
         b.iter(|| {
@@ -114,5 +119,9 @@ fn expr_bench_on_array(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, expr_bench, expr_bench_on_array);
+criterion_group!(
+    benches,
+    // expr_bench,
+    expr_bench_on_array
+);
 criterion_main!(benches);

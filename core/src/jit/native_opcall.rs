@@ -24,7 +24,7 @@ impl NativeOpCall {
                 call_conv: CallConv::Fast,
             },
             Float64Lt => Signature {
-                params: vec![AbiParam::new(pointer_type), AbiParam::new(pointer_type)],
+                params: vec![AbiParam::new(types::F64), AbiParam::new(types::F64)],
                 returns: vec![AbiParam::new(types::I8)],
                 call_conv: CallConv::Fast,
             },
@@ -45,7 +45,11 @@ impl NativeOpCall {
         match self {
             Float64AddWrapping => f64::add_wrapping as *const u8,
             Float64DivWrapping => f64::div_wrapping as *const u8,
-            Float64Lt => f64::lt as *const u8,
+            Float64Lt => lt_wrap as *const u8,
         }
     }
+}
+
+fn lt_wrap(a: f64, b: f64) -> bool {
+    a < b
 }

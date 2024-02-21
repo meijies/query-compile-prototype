@@ -426,6 +426,7 @@ dependencies = [
  "cranelift-jit",
  "cranelift-module",
  "cranelift-native",
+ "smallvec",
 ]
 
 [[package]]
