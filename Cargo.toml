@@ -1,5 +1,13 @@
 [workspace]
-members = ["common", "core", "physical-operator", "physical-expr", "execution", "learn", "experiment"]
+members = [
+    "common",
+    "core",
+    "physical-operator",
+    "physical-expr",
+    "execution",
+    "learn",
+    "experiment",
+]
 resolver = "2"
 
 [workspace.package]
@@ -16,3 +24,11 @@ core = { path = "./core" }
 execution = { path = "./execution" }
 physical-expr = { path = "./physical-expr" }
 physical-operator = { path = "./physical-operator" }
+
+[build]
+# rustflags = ["dwarf-version=4"]
+rustflags = ["-Z", "threads=8"]
+
+[profile.release]
+# codegen-units = 1
+# lto = "fat"

@@ -1,5 +1,5 @@
 use core::CodegenContext;
-use std::mem;
+use std::{mem, simd::{f64x4, i8x4, mask8x4, Simd, cmp::SimdPartialOrd}};
 
 use arrow::{
     array::{Array, BooleanArray, Datum, Float64Array},
@@ -159,7 +159,7 @@ pub fn jit_index_f64() -> fn(*const f64, i64) -> f64 {
     unsafe { mem::transmute::<_, fn(*const f64, i64) -> f64>(code) }
 }
 
-pub fn jit_expr_v3() -> fn(*const u8, *const u8, *const bool, f64, f64, i64, i64) {
+pub fn jit_expr_v3() -> extern "C" fn(*const u8, *const u8, *const bool, f64, f64, i64, i64) {
     let mut ctx = CodegenContext::builder().debug().finish();
     let data_type = types::F64X2;
     let result_type = types::I8X2;
@@ -169,7 +169,7 @@ pub fn jit_expr_v3() -> fn(*const u8, *const u8, *const bool, f64, f64, i64, i64
         vec![
             AbiParam::new(ctx.ptype()),
             AbiParam::new(ctx.ptype()),
-            AbiParam::special(ctx.ptype(), ArgumentPurpose::StructReturn),
+            AbiParam::new(ctx.ptype()),
             AbiParam::new(types::F64),
             AbiParam::new(types::F64),
             AbiParam::new(types::I64),
@@ -205,12 +205,8 @@ pub fn jit_expr_v3() -> fn(*const u8, *const u8, *const bool, f64, f64, i64, i64
     func_ctx
         .builder
         .append_block_param(body_block, func_ctx.ptype);
-    func_ctx
-        .builder
-        .append_block_param(body_block, types::F64X2);
-    func_ctx
-        .builder
-        .append_block_param(body_block, types::F64X2);
+    func_ctx.builder.append_block_param(body_block, data_type);
+    func_ctx.builder.append_block_param(body_block, data_type);
     func_ctx.builder.append_block_param(body_block, types::I64);
     func_ctx.builder.append_block_param(body_block, types::I64);
     func_ctx
@@ -285,7 +281,11 @@ pub fn jit_expr_v3() -> fn(*const u8, *const u8, *const bool, f64, f64, i64, i64
     func_ctx.builder.switch_to_block(exit_block);
     let func_id = func_ctx.finalize(&[]);
     let code = ctx.finalize(func_id);
-    unsafe { mem::transmute::<_, fn(*const u8, *const u8, *const bool, f64, f64, i64, i64)>(code) }
+    unsafe {
+        mem::transmute::<_, extern "C" fn(*const u8, *const u8, *const bool, f64, f64, i64, i64)>(
+            code,
+        )
+    }
 }
 
 pub fn jit_expr_on_array_v3(
@@ -293,7 +293,7 @@ pub fn jit_expr_on_array_v3(
     b: &Float64Array,
     c: f64,
     d: f64,
-    op: fn(*const u8, *const u8, *const bool, f64, f64, i64, i64),
+    op: extern "C" fn(*const u8, *const u8, *const bool, f64, f64, i64, i64),
 ) -> Result<BooleanArray, ArrowError> {
     if a.len() != b.len() {
         return Err(ArrowError::ComputeError(
@@ -301,16 +301,23 @@ pub fn jit_expr_on_array_v3(
         ));
     }
 
+    if a.is_empty() {
+        return Err(ArrowError::ComputeError(
+            "Cannot perform binary operation on arrays of different length".to_string(),
+        ));
+    }
     let nulls = NullBuffer::union(a.logical_nulls().as_ref(), b.logical_nulls().as_ref());
     let a_ptr = a.values().inner().as_ptr();
     let b_ptr = b.values().inner().as_ptr();
-    let mut res: Vec<bool> = Vec::with_capacity(a.len() + 1);
+    // there is a memory problem for cranelift jit.
+    let mut res: Vec<bool> = Vec::with_capacity((a.len() / 2) * 2 + 10);
     let res_ptr = res.as_ptr();
     op(a_ptr, b_ptr, res_ptr, c, d, 0, (a.len() / 2) as i64);
     unsafe {
-        res.set_len(a.len());
+        res.set_len((a.len() / 2) * 2);
     }
     let buffer = BooleanBuffer::from_iter(res);
+
     Ok(BooleanArray::new(buffer, nulls))
 }
 
@@ -338,13 +345,52 @@ pub fn hardcode_expr_on_array(
     Ok(res)
 }
 
+pub fn simd_expr(
+    a: &Float64Array,
+    b: &Float64Array,
+    c: f64,
+    d: f64,
+) -> Result<BooleanArray, ArrowError> {
+    let len = a.len();
+    if a.len() != b.len() {
+        return Err(ArrowError::ComputeError(
+            "Cannot perform binary operation on arrays of different length".to_string(),
+        ));
+    }
+
+    let nulls = NullBuffer::union(a.logical_nulls().as_ref(), b.logical_nulls().as_ref());
+
+    let a_values = a.values();
+    let b_values = b.values();
+
+    let (_a_extra, a_chunks) = a_values.as_rchunks();
+    let (_b_extra, b_chunks) = b_values.as_rchunks();
+
+    let splat_c = f64x4::splat(c);
+    let splat_d = f64x4::splat(d);
+
+    let mut res = Vec::with_capacity(len);
+    unsafe { res.set_len(len) };
+    let (_, res_chunk) = res.as_rchunks_mut::<4>();
+
+    for ((a, b), c) in std::iter::zip(a_chunks, b_chunks).zip(res_chunk) {
+        *c = ((f64x4::from(*a) + f64x4::from(*b)) / splat_c ).simd_lt(splat_d).to_array();
+    }
+    let buffer = BooleanBuffer::from_iter(res);
+    let res = BooleanArray::new(buffer, nulls);
+    Ok(res)
+}
+
 #[cfg(test)]
 mod tests {
-    use arrow::array::Float64Array;
+
+    use arrow::{
+        array::Float64Array, datatypes::Float64Type, util::bench_util::create_primitive_array,
+    };
 
     use crate::expr::{jit_expr_v1, jit_expr_v2};
 
-    use super::{jit_expr_on_array_v3, jit_expr_v3, jit_index_f64};
+    use super::{jit_expr_on_array_v3, jit_expr_v3, jit_index_f64, simd_expr};
 
     #[test]
     fn test_jit_expr_v1() {
@@ -362,13 +408,29 @@ mod tests {
 
     #[test]
     fn test_jit_expr_on_array_v3() {
-        let a = &Float64Array::from(vec![2.0_f64, 4.0_f64]);
-        let b = &Float64Array::from(vec![9.0_f64, 4.0_f64]);
+        let a = &Float64Array::from(vec![2.0_f64, 4.0_f64, 5.0_f64, 6.0_f64]);
+        let b = &Float64Array::from(vec![3.0_f64, 4.0_f64, 6.0_f64, 7.0_f64]);
         let c = 3.0_f64;
         let d = 3.0_f64;
         let op = jit_expr_v3();
         let res = jit_expr_on_array_v3(a, b, c, d, op).unwrap();
-        println!("{:?}", res);
+        let (values, _) = res.into_parts();
+        assert_eq!(values.values(), &[0b0011]);
+    }
+
+    #[test]
+    fn test_jit_expr_on_array_v3_64() {
+        let BATCH_SIZE = 64;
+        let a = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
+        let b = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
+        println!("{}", a.len());
+        let c = 3.0_f64;
+        let d = 3.0_f64;
+        let op = jit_expr_v3();
+        for _ in 0..100000 {
+            let res = jit_expr_on_array_v3(&a, &b, c, d, op).unwrap();
+            let (values, _) = res.into_parts();
+        }
     }
 
     #[test]
@@ -384,5 +446,13 @@ mod tests {
         println!("item {}", item);
         let item = op(_ref, 2_i64);
         println!("item {}", item);
+    }
+
+    #[test]
+    fn test_simd_array() {
+        let BATCH_SIZE = 64;
+        let a = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
+        let b = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
+        simd_expr(&a, &b, 3.0, 3.0);
     }
 }

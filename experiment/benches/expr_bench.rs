@@ -5,7 +5,7 @@ use arrow::{
 use criterion::*;
 use experiment::expr::{
     hardcode_expr, hardcode_expr_on_array, jit_expr_on_array, jit_expr_on_array_v3, jit_expr_v1,
-    jit_expr_v2, jit_expr_v3, native_arrow_expr, native_arrow_expr_on_array,
+    jit_expr_v2, jit_expr_v3, native_arrow_expr, native_arrow_expr_on_array, simd_expr,
 };
 fn expr_bench(c: &mut Criterion) {
     let v1 = jit_expr_v1();
@@ -54,7 +54,7 @@ fn expr_bench(c: &mut Criterion) {
 }
 
 fn expr_bench_on_array(c: &mut Criterion) {
-    const BATCH_SIZE: usize = 64;
+    const BATCH_SIZE: usize = 1024 * 4096;
     let array_a = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
     let array_b = create_primitive_array::<Float64Type>(BATCH_SIZE, 0.);
     let scalar_c = Float64Array::new_scalar(3.0);
@@ -65,8 +65,17 @@ fn expr_bench_on_array(c: &mut Criterion) {
     let v2 = jit_expr_v2();
     let v3 = jit_expr_v3();
 
-    c.bench_function("jit_esxpr_on_array_v3", |b| {
-        b.iter(|| jit_expr_on_array_v3(&array_a, &array_b, 3.0f64, 4.0f64, v3).unwrap())
+    c.bench_function("jit_expr_on_array_v3", |b| {
+        b.iter(|| {
+            jit_expr_on_array_v3(
+                black_box(&array_a),
+                black_box(&array_b),
+                black_box(3.0f64),
+                black_box(4.0f64),
+                black_box(v3),
+            )
+            .unwrap()
+        })
     });
 
     c.bench_function("jit_expr_on_array_v1", |b| {
@@ -108,13 +117,23 @@ fn expr_bench_on_array(c: &mut Criterion) {
 
     c.bench_function("native_arrow_expr_on_array", |b| {
         b.iter(|| {
-            criterion::black_box(native_arrow_expr_on_array(
+            native_arrow_expr_on_array(
                 black_box(&array_a),
                 black_box(&array_b),
                 black_box(&scalar_c),
                 black_box(&scalar_d),
-            ))
+            )
             .unwrap()
+        })
+    });
+    c.bench_function("simd_expr_on_array", |b| {
+        b.iter(|| {
+            simd_expr(
+                black_box(&array_a),
+                black_box(&array_b),
+                black_box(3.0),
+                black_box(4.0),
+            );
         })
     });
 }

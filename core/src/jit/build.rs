@@ -28,6 +28,7 @@ fn build_isa(flags: settings::Flags) -> Arc<dyn TargetIsa> {
     let isa_builder = cranelift_native::builder().unwrap_or_else(|msg| {
         panic!("host machine is not supported: {}", msg);
     });
+
     isa_builder.finish(flags).unwrap()
 }
 
